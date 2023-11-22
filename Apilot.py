@@ -60,6 +60,13 @@ class Apilot(Plugin):
             e_context["reply"] = reply
             e_context.action = EventAction.BREAK_PASS  # 事件结束，并跳过处理context的默认逻辑
 
+        if content == "情话":
+            qinghua = self.get_qinghua_calendar()
+            reply_type = ReplyType.IMAGE_URL if self.is_valid_url(qinghua) else ReplyType.TEXT
+            reply = self.create_reply(reply_type, qinghua or "情话服务异常，请检查配置或者查看服务器log")
+            e_context["reply"] = reply
+            e_context.action = EventAction.BREAK_PASS  # 事件结束，并跳过处理context的默认逻辑
+
         if content.startswith("快递"):
             # Extract the part after "快递"
             tracking_number = content[2:].strip()
@@ -200,6 +207,20 @@ class Apilot(Plugin):
                 return self.handle_error(moyu_calendar_info, "moyu_calendar请求失败")
         except Exception as e:
             return self.handle_error(e, "获取摸鱼日历信息失败")
+
+    def get_qinghua_calendar(self):
+        url = BASE_URL_ALAPI + "qinghua"
+        payload = "format=json"
+        headers = {'Content-Type': "application/x-www-form-urlencoded"}
+        try:
+            qinghua_calendar_info = self.make_request(url, method="POST", headers=headers, data=payload)
+            # 验证请求是否成功
+           if isinstance(qinghua_calendar_info, dict) and qinghua_calendar_info['success']:
+               return qinghua_calendar_info['url']
+            else:
+                return self.handle_error(qinghua_calendar_info, "moyu_calendar请求失败")
+        except Exception as e:
+            return self.handle_error(e, "获取土味情话信息失败")
 
     def get_horoscope(self, astro_sign: str, time_period: str = "today"):
         url = BASE_URL_VVHAN + "horoscope"
